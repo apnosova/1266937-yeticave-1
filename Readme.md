@@ -1,7 +1,7 @@
 # Личный проект «YetiCave»
 
 * Студент: [Ангелина Носова](https://up.htmlacademy.ru/php-individual/1/user/1266937).
-* Наставник: `Неизвестно`.
+* Наставник: [Сергей Парфенов](https://htmlacademy.ru/profile/id926645).
 
 ---
 
