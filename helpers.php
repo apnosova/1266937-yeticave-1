@@ -161,7 +161,13 @@ function formatPrice(int $price): string
 function getTimeToExpiry(string $date): array
 {
     $expiryDate = date_create($date);
-    $currentDate = date_create("now");
+
+    if ($expiryDate === false) {
+        error_log('В функцию getTimeToExpiry передана некорректная дата' . $date);
+        return [0, 0];
+    }
+
+    $currentDate = date_create();
 
     if ($currentDate > $expiryDate) {
         return [0, 0];

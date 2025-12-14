@@ -1,4 +1,12 @@
 <?php
+
+/**
+ * @var array $categories
+ * @var array $lots
+ * @var int $isAuth
+ * @var string $userName
+ */
+
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/data.php';
 

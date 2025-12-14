@@ -1,6 +1,10 @@
 <?php
-/** @var array $categories */
-/** @var array $lots */
+
+/**
+ * @var array $categories
+ * @var array $lots
+ */
+
 ?>
 
 <section class="promo">
