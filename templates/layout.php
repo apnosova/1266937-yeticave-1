@@ -1,9 +1,13 @@
 <?php
-/** @var string $title */
-/** @var int $isAuth */
-/** @var string $userName */
-/** @var $content */
-/** @var array $categories */
+
+/**
+ * @var string $title
+ * @var int $isAuth
+ * @var string $userName
+ * @var string $content
+ * @var array $categories
+ */
+
 ?>
 
 <!DOCTYPE html>

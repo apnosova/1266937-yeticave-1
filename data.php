@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/helpers.php';
 
 $isAuth = rand(0, 1);
 $userName = 'Angelina';
@@ -65,13 +64,13 @@ $lots = [
         'category' => 'Одежда',
         'price' => '7500',
         'url' => '/img/lot-5.jpg',
-        'expiry_date' => '2025-11-30'
+        'expiry_date' => '2025-12-16'
     ],
     [
         'title' => 'Маска Oakley Canopy',
         'category' => 'Разное',
         'price' => '5400',
         'url' => '/img/lot-6.jpg',
-        'expiry_date' => '2025-12-01'
+        'expiry_date' => '2025-12-15'
     ]
 ];
