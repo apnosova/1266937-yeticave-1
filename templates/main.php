@@ -13,7 +13,7 @@
         снаряжение.</p>
     <ul class="promo__list">
         <?php foreach ($categories as $category): ?>
-            <li class="promo__item promo__item--<?= htmlspecialchars($category['mod']); ?>">
+            <li class="promo__item promo__item--<?= htmlspecialchars($category['symbol_code']); ?>">
                 <a class="promo__link" href="pages/all-lots.html"><?= htmlspecialchars($category['title']); ?></a>
             </li>
         <?php endforeach; ?>

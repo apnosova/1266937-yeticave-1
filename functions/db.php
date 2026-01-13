@@ -1,0 +1,135 @@
+<?php
+
+/**
+ * Устанавливает новое соединение с базой данных
+ * @param array $config_db Массив с ключами: hostname, username, password, database
+ * @throws Exception При неудачной попытке подключения
+ * @return mysqli Ресурс соединения
+ */
+function connectDB(array $config_db): mysqli
+{
+    try {
+        $link = mysqli_connect(
+            $config_db['hostname'],
+            $config_db['username'],
+            $config_db['password'],
+            $config_db['database']
+        );
+
+        mysqli_set_charset($link, "utf8mb4");
+
+        return $link;
+
+    } catch (mysqli_sql_exception $e) {
+        error_log('Ошибка при подключении к базе данных:' . $e->getMessage());
+        throw new Exception('Сервис временно недоступен');
+    }
+}
+
+/**
+ * Получает список всех категорий из базы данных
+ * @param mysqli $link Ресурс соединения
+ * @throws mysqli_sql_exception Если ошибка в запросе
+ * @return array Возвращает массив всех категорий или пустой массив при ошибке
+ */
+function getCategories(mysqli $link): array
+{
+    try {
+        $sql = 'SELECT id, title, symbol_code FROM categories';
+        $result = mysqli_query($link, $sql);
+        $categories = mysqli_fetch_all($result, MYSQLI_ASSOC);
+
+        return $categories;
+
+    } catch (mysqli_sql_exception $e) {
+        error_log('Ошибка запроса к базе данных getCategories:' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Получает список последних 6 активных лотов, отсортированных по убыванию
+ * @param mysqli $link Ресурс соединения
+ * @throws mysqli_sql_exception Если ошибка в запросе
+ * @return array Возвращает массив лотов или пустой массив при ошибке
+ */
+function getLots(mysqli $link): array
+{
+    try {
+        $sql = 'SELECT
+                    l.id,
+                    l.title,
+                    l.price,
+                    l.img_url AS url,
+                    l.expiry_at AS expiry_date,
+                    c.title AS category
+                FROM lots l
+                JOIN categories c ON l.category_id = c.id
+                WHERE l.expiry_at > NOW()
+                ORDER BY l.created_at DESC
+                LIMIT 6';
+
+
+        $result = mysqli_query($link, $sql);
+        $lots = mysqli_fetch_all($result, MYSQLI_ASSOC);
+
+        return $lots;
+
+    } catch (mysqli_sql_exception $e) {
+        error_log('Ошибка запроса к базе данных getLots:' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Создает подготовленное выражение на основе готового SQL запроса и переданных данных
+ *
+ * @param $link mysqli Ресурс соединения
+ * @param $sql string SQL запрос с плейсхолдерами вместо значений
+ * @param array $data Данные для вставки на место плейсхолдеров
+ *
+ * @return mysqli_stmt Подготовленное выражение
+ */
+function dbGetPrepareStmt(mysqli $link, string $sql, array $data = []): mysqli_stmt
+{
+    $stmt = mysqli_prepare($link, $sql);
+
+    if ($stmt === false) {
+        $errorMsg = 'Не удалось инициализировать подготовленное выражение: ' . mysqli_error($link);
+        die($errorMsg);
+    }
+
+    if ($data) {
+        $types = '';
+        $stmt_data = [];
+
+        foreach ($data as $value) {
+            $type = 's';
+
+            if (is_int($value)) {
+                $type = 'i';
+            } else if (is_string($value)) {
+                $type = 's';
+            } else if (is_double($value)) {
+                $type = 'd';
+            }
+
+            if ($type) {
+                $types .= $type;
+                $stmt_data[] = $value;
+            }
+        }
+
+        $values = array_merge([$stmt, $types], $stmt_data);
+
+        $func = 'mysqli_stmt_bind_param';
+        $func(...$values);
+
+        if (mysqli_errno($link) > 0) {
+            $errorMsg = 'Не удалось связать подготовленное выражение с параметрами: ' . mysqli_error($link);
+            die($errorMsg);
+        }
+    }
+
+    return $stmt;
+}
