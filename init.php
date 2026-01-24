@@ -13,5 +13,5 @@ $config = require_once __DIR__ . '/config.php';
 
 $db = connectDB($config['db']);
 
-$isAuth = rand(0, 1);
+$isAuth = 0;
 $userName = 'Angelina';
