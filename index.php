@@ -8,9 +8,6 @@
 
 require_once __DIR__ . '/init.php';
 
-$isAuth = rand(0, 1);
-$userName = 'Angelina';
-
 $categories = getCategories($db);
 $lots = getLots($db);
 

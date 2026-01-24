@@ -86,15 +86,17 @@ function validateDate(string $value): string|null
 /**
  * Проверяет MIME-тип загруженного файла
  * @param array $file Элемент массива $_FILES для загруженного файла
+ * @param array $fileTypes Допустимые форматы изображения
  * @return string|null Текст ошибки или null
  */
-function validateImage(array $file): string|null
+function validateImage(array $file, array $fileTypes): string|null
 {
     $mimeType = mime_content_type($file['tmp_name']);
-    $fileTypes = ['image/jpeg', 'image/png'];
 
     if (!in_array($mimeType, $fileTypes)) {
-        return 'Допустимые форматы изображения: jpeg, png';
+        $typeList = implode(', ', $fileTypes);
+
+        return "Допустимые форматы изображения: {$typeList}";
     }
 
     return null;
@@ -105,7 +107,7 @@ function validateImage(array $file): string|null
  * Валидирует данные формы добавления лота
  * @param array $postData Данные из массива $_POST
  * @param array $fileData Данные из массива $_FILES
- * @return array Список ошибок
+ * @return string[] Список ошибок
  */
 function validateLotForm(array $postData, array $fileData): array
 {
@@ -149,7 +151,7 @@ function validateLotForm(array $postData, array $fileData): array
             return validateDate($value);
         },
         'lot-img' => function ($file) {
-            return validateImage($file);
+            return validateImage($file, ['jpeg', 'png']);
         }
     ];
 
@@ -182,4 +184,94 @@ function validateLotForm(array $postData, array $fileData): array
     }
 
     return array_filter($errors);
+}
+
+/**
+ * Валидирует формат электронной почты
+ * @param string $value Адрес электронной почты
+ * @return string|null Текст ошибки или null
+ */
+function validateEmailFormat(string $value): string|null
+{
+    if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+        return 'Введите корректный e-mail';
+    }
+
+    return null;
+}
+
+/**
+ * Валидирует данные формы регистрации
+ * @param array $postData Данные из массива $_POST
+ * @return string[] Список ошибок
+ */
+function validateSignUpForm(array $postData): array
+{
+    $requiredFields = [
+        'email',
+        'password',
+        'name',
+        'message'
+    ];
+
+    $errorMessages = [
+        'email' => 'Введите e-mail',
+        'password' => 'Введите пароль',
+        'name' => 'Введите имя',
+        'message' => 'Напишите, как с вами связаться'
+    ];
+
+    $rules = [
+        'email' => function ($value) {
+            return validateEmailFormat($value) ?? validateLength($value, 8, 72);
+        },
+        'password' => function ($value) {
+            return validateLength($value, 8, 72);
+        },
+        'name' => function ($value) {
+            return validateLength($value, 1, 50);
+        },
+        'message' => function ($value) {
+            return validateLength($value, 1, 1000);
+        },
+    ];
+
+    $errors = [];
+
+    foreach ($requiredFields as $key) {
+        if (empty($postData[$key])) {
+            $errors[$key] = $errorMessages[$key];
+        }
+    }
+
+    foreach ($rules as $key => $rule) {
+        if (empty($errors[$key])) {
+            $ruleError = $rule($postData[$key]);
+            if ($ruleError) {
+                $errors[$key] = $ruleError;
+            }
+        }
+    }
+
+    return array_filter($errors);
+}
+
+/**
+ * Проверяет, не используется ли email другим пользователем
+ * @param mysqli $link Ресурс соединения
+ * @param string $email Email, введенный пользователем
+ * @return string|null Текст ошибки или null
+ */
+function validateEmailUnique(mysqli $link, string $email): string|null
+{
+    $sql = 'SELECT id FROM users WHERE email = ?';
+    $stmt = dbGetPrepareStmt($link, $sql, [$email]);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    if (mysqli_num_rows($result) > 0) {
+        return 'Пользователь с таким email уже зарегистрирован';
+    }
+
+    return null;
 }
