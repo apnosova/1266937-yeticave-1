@@ -10,12 +10,10 @@ require_once __DIR__ . '/init.php';
 $categories = getCategories($db);
 
 if ($user) {
-    http_response_code(403);
-
-    // $pageContent = includeTemplate('error.php', [
-    //     'error' => 'Ошибка 403. Доступ запрещен'
-    // ]);
-    exit();
+    if (!$user) {
+        showErrorPage(403, 'Доступ запрещен. Страница доступна только неавторизованным пользователям', $user, $categories);
+        exit();
+    }
 }
 
 $errors = [];
