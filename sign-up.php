@@ -1,14 +1,20 @@
 <?php
 
 /**
- * @var int $isAuth
- * @var string $userName
  * @var mysqli $db
+ * @var array $user
  */
 
 require_once __DIR__ . '/init.php';
 
 $categories = getCategories($db);
+
+if ($user) {
+    if (!$user) {
+        showErrorPage(403, 'Доступ запрещен. Страница доступна только неавторизованным пользователям', $user, $categories);
+        exit();
+    }
+}
 
 $errors = [];
 $postData = $_POST;
@@ -48,8 +54,7 @@ $layoutContent = includeTemplate(
     [
         'content' => $pageContent,
         'categories' => $categories,
-        'isAuth' => $isAuth,
-        'userName' => $userName,
+        'user' => $user,
         'title' => 'YetiCave - Регистрация'
     ]
 );
