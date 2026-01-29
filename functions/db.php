@@ -119,8 +119,7 @@ function getLots(mysqli $link): array
                 FROM lots l
                 JOIN categories c ON l.category_id = c.id
                 WHERE l.expiry_at > NOW()
-                ORDER BY l.created_at DESC
-                LIMIT 6';
+                ORDER BY l.created_at DESC';
 
 
         $result = mysqli_query($link, $sql);
@@ -276,5 +275,74 @@ function authenticateUser(mysqli $link, string $email, string $password): array|
     }
 
     return null;
+}
+
+/**
+ * Получает количество элементов, соответствующих поисковому запросу
+ * @param mysqli $link Ресурс соединения
+ * @param string $search Строка поискового запроса
+ * @throws Exception Если произошла ошибка
+ * @return int Количество найденных элементов
+ */
+function getItemsCount(mysqli $link, string $search): int
+{
+    try {
+        $sql = 'SELECT COUNT(*) as cnt FROM lots WHERE MATCH(title, description) AGAINST(?)';
+        $stmt = dbGetPrepareStmt($link, $sql, [$search]);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        if (!$result) {
+            return 0;
+        }
+        $itemsCount = mysqli_fetch_assoc($result);
+
+        return (int) ($itemsCount['cnt'] ?? 0);
+
+    } catch (Exception $e) {
+        error_log("Ошибка при получении количества элементов из поискового запроса: " . $e->getMessage());
+        return 0;
+    }
+
+}
+
+
+/**
+ * Выполняет полнотекстовый поиск по открытым лотам c пагинацией
+ * @param mysqli $link Ресурс соединения
+ * @param string $search Строка поискового запроса
+ * @param int $pageItems Количество лотов на страницу
+ * @param int $offset Смещение
+ * @throws Exception Если произошла ошибка
+ * @return array Список найденных лотов
+ */
+function getLotsViaSearch(mysqli $link, string $search, int $pageItems, int $offset): array
+{
+    $sql = 'SELECT
+                l.id,
+                l.title,
+                l.price,
+                l.img_url AS url,
+                l.expiry_at AS expiry_date,
+                c.title AS category
+            FROM lots l
+            JOIN categories c ON l.category_id = c.id
+            WHERE MATCH(l.title, l.description) AGAINST(?)
+            AND l.expiry_at > NOW()
+            ORDER BY created_at DESC
+            LIMIT ' . $pageItems . ' OFFSET ' . $offset;
+
+
+    try {
+        $stmt = dbGetPrepareStmt($link, $sql, [$search]);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        return $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
+
+    } catch (Exception $e) {
+        error_log('Ошибка поиска: ' . $e->getMessage());
+        return [];
+    }
 }
 
