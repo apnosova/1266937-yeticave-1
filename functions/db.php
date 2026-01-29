@@ -278,12 +278,45 @@ function authenticateUser(mysqli $link, string $email, string $password): array|
 }
 
 /**
- * Выполняет полнотекстовый поиск по открытым лотам
+ * Получает количество элементов, соответствующих поисковому запросу
  * @param mysqli $link Ресурс соединения
  * @param string $search Строка поискового запроса
+ * @throws Exception Если произошла ошибка
+ * @return int Количество найденных элементов
+ */
+function getItemsCount(mysqli $link, string $search): int
+{
+    try {
+        $sql = 'SELECT COUNT(*) as cnt FROM lots WHERE MATCH(title, description) AGAINST(?)';
+        $stmt = dbGetPrepareStmt($link, $sql, [$search]);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        if (!$result) {
+            return 0;
+        }
+        $itemsCount = mysqli_fetch_assoc($result);
+
+        return (int) ($itemsCount['cnt'] ?? 0);
+
+    } catch (Exception $e) {
+        error_log("Ошибка при получении количества элементов из поискового запроса: " . $e->getMessage());
+        return 0;
+    }
+
+}
+
+
+/**
+ * Выполняет полнотекстовый поиск по открытым лотам c пагинацией
+ * @param mysqli $link Ресурс соединения
+ * @param string $search Строка поискового запроса
+ * @param int $pageItems Количество лотов на страницу
+ * @param int $offset Смещение
+ * @throws Exception Если произошла ошибка
  * @return array Список найденных лотов
  */
-function getLotsViaSearch(mysqli $link, string $search): array
+function getLotsViaSearch(mysqli $link, string $search, int $pageItems, int $offset): array
 {
     $sql = 'SELECT
                 l.id,
@@ -297,7 +330,7 @@ function getLotsViaSearch(mysqli $link, string $search): array
             WHERE MATCH(l.title, l.description) AGAINST(?)
             AND l.expiry_at > NOW()
             ORDER BY created_at DESC
-            LIMIT 9';
+            LIMIT ' . $pageItems . ' OFFSET ' . $offset;
 
 
     try {
@@ -305,15 +338,11 @@ function getLotsViaSearch(mysqli $link, string $search): array
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
 
-        if ($result) {
-            return mysqli_fetch_all($result, MYSQLI_ASSOC);
-        }
+        return $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
 
     } catch (Exception $e) {
         error_log('Ошибка поиска: ' . $e->getMessage());
         return [];
     }
-
-    return [];
 }
 
