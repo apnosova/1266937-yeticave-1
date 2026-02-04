@@ -127,7 +127,7 @@ function formatPrice(int $price, bool $withSymbol = true): string
  *  Возвращает количество целых часов и остатка минут до даты в будущем
  *
  * @param string $date Дата в формате ГГГГ-ММ-ДД
- * @return array Массив: первый элемент - целое количество часов до даты, второй - остаток в минутах
+ * @return int[] Массив: первый элемент - целое количество часов до даты, второй - остаток в минутах
  */
 function getRemainingTime(string $date): array
 {
@@ -151,9 +151,16 @@ function getRemainingTime(string $date): array
     return [$hours, $minutes];
 }
 
+/**
+ * Форматирует время, оставшееся до даты в будущем
+ * @param int[] $timeData Массив, в котором первый элемент - часы, второй - минуты
+ * @return string Время в формате ЧЧ:ММ (с ведущими нулями)
+ */
 function formatRemainingTime(array $timeData): string
 {
     [$hours, $minutes] = $timeData;
 
     return sprintf("%02d:%02d", $hours, $minutes);
 }
+
+// function getTimePassed()

@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/init.php';
+require_once __DIR__ . '/getwinner.php';
 
 $categories = getCategories($db);
 $lots = getLots($db);

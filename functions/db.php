@@ -90,7 +90,12 @@ function connectDB(array $config_db): mysqli
 function getCategories(mysqli $link): array
 {
     try {
-        $sql = 'SELECT id, title, symbol_code FROM categories';
+        $sql = 'SELECT
+                    id,
+                    title,
+                    symbol_code
+                    FROM categories';
+
         $result = mysqli_query($link, $sql);
         $categories = mysqli_fetch_all($result, MYSQLI_ASSOC);
 
@@ -161,7 +166,9 @@ function getLotById(mysqli $link, int $id): ?array
                 JOIN categories c ON l.category_id = c.id
                 LEFT JOIN bids b ON l.id = b.lot_id
                 WHERE l.id = ?
-                GROUP BY l.id, c.title';
+                GROUP BY
+                    l.id,
+                    c.title';
 
         $stmt = dbGetPrepareStmt($link, $sql, [$id]);
         mysqli_stmt_execute($stmt);
@@ -187,8 +194,18 @@ function getLotById(mysqli $link, int $id): ?array
  */
 function addLot(mysqli $link, array $data, int $userId): int
 {
-    $sql = "INSERT INTO lots(created_at, title, description, img_url, price, step, expire_at, creator_id, category_id)
-            VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = 'INSERT INTO lots(
+                created_at,
+                title,
+                description,
+                img_url,
+                price,
+                step,
+                expire_at,
+                creator_id,
+                category_id
+            )
+            VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)';
 
     $data = [
         $data['lot-name'],
@@ -229,7 +246,13 @@ function addNewUser(mysqli $link, array $data): bool
 {
     $password = password_hash($data['password'], PASSWORD_DEFAULT);
 
-    $sql = 'INSERT INTO users (created_at, email, username, password_hash, contacts)
+    $sql = 'INSERT INTO users (
+                created_at,
+                email,
+                username,
+                password_hash,
+                contacts
+            )
             VALUES (NOW(), ?, ?, ?, ?)';
 
     $stmt = dbGetPrepareStmt($link, $sql, [
@@ -261,7 +284,13 @@ function addNewUser(mysqli $link, array $data): bool
 function authenticateUser(mysqli $link, string $email, string $password): array|null
 {
     try {
-        $sql = 'SELECT id, username, password_hash FROM users WHERE email = ?';
+        $sql = 'SELECT
+                    id,
+                    username,
+                    password_hash
+                    FROM users
+                    WHERE email = ?';
+
         $stmt = dbGetPrepareStmt($link, $sql, [$email]);
 
         if (!mysqli_stmt_execute($stmt)) {
@@ -352,7 +381,7 @@ function findLotsBySearch(mysqli $link, string $search, int $pageItems, int $off
             FROM lots l
             JOIN categories c ON l.category_id = c.id
             WHERE MATCH(l.title, l.description) AGAINST(?)
-            AND l.expire_at > NOW()
+                AND l.expire_at > NOW()
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?';
 
@@ -390,7 +419,7 @@ function findLotsByCategory(mysqli $link, int $category_id, int $limit, int $off
                 FROM lots l
                 JOIN categories c ON l.category_id = c.id
                 WHERE category_id = ?
-                AND expire_at > NOW()
+                    AND expire_at > NOW()
                 ORDER BY l.created_at DESC
                 LIMIT ? OFFSET ?';
 
@@ -418,7 +447,12 @@ function findLotsByCategory(mysqli $link, int $category_id, int $limit, int $off
  */
 function addBid(mysqli $link, int $bid, int $lotId, int $userId): bool
 {
-    $sql = 'INSERT INTO bids(created_at, price, lot_id, user_id)
+    $sql = 'INSERT INTO bids(
+                created_at,
+                price,
+                lot_id,
+                user_id
+            )
             VALUES (NOW(), ?, ?, ?)';
 
     $stmt = dbGetPrepareStmt($link, $sql, [
@@ -432,7 +466,7 @@ function addBid(mysqli $link, int $bid, int $lotId, int $userId): bool
         return $result;
 
     } catch (mysqli_sql_exception $e) {
-        error_log('Ошибка БД при добавлении ставки' . $e->getMessage());
+        error_log('Ошибка БД при добавлении ставки: ' . $e->getMessage());
         return false;
     }
 }
@@ -489,7 +523,13 @@ function getUserBids(mysqli $link, int $userId): array
                 c.title AS category,
                 u.contacts,
                 CASE
-                    WHEN l.winner_id = b.user_id THEN 1
+                    WHEN l.winner_id = b.user_id
+                        AND b.price = (
+                            SELECT MAX(price)
+                            FROM bids
+                            WHERE lot_id = l.id
+                        )
+                    THEN 1
                     ELSE 0
                 END AS isWinner,
                 CASE
@@ -514,5 +554,66 @@ function getUserBids(mysqli $link, int $userId): array
     } catch (mysqli_sql_exception $e) {
         error_log("Ошибка при получении списка ставок, сделанных пользователем {$userId}: " . $e->getMessage());
         return [];
+    }
+}
+
+/**
+ * Получает список всех лотов без победителей, дата истечения которых меньше или равна текущей дате,
+ * и находит для каждого такого лота последнюю (max) ставку
+ * @param mysqli $link Ресурс соединения с базой данных
+ * @return array Список лотов или пустой массив
+ */
+function getExpiredLots(mysqli $link): array
+{
+    try {
+        $sql = 'SELECT
+                    l.id,
+                    l.title,
+                    b.user_id,
+                    u.email,
+                    u.username
+                FROM lots l
+                LEFT JOIN bids b ON l.id = b.lot_id
+                    AND b.price = (
+                        SELECT MAX(price)
+                        FROM bids
+                        WHERE lot_id = l.id
+                    )
+                LEFT JOIN users u ON b.user_id = u.id
+                WHERE l.winner_id IS NULL
+                    AND l.expire_at <= NOW()
+                ORDER BY l.expire_at DESC';
+
+
+        $result = mysqli_query($link, $sql);
+
+        return $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
+
+    } catch (mysqli_sql_exception $e) {
+        error_log('Ошибка при получении списка завершенных лотов без победителя: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Записывает в базу данных победителя для лота
+ * @param mysqli $link Ресурс соединения с базой данных
+ * @param int $lotId id лота
+ * @param int $userId id победителя
+ * @return bool В случае успешного обновления - true, иначе false
+ */
+function setWinner(mysqli $link, int $userId, int $lotId): bool
+{
+    try {
+        $sql = 'UPDATE lots
+            SET winner_id = ?
+            WHERE id = ?';
+
+        $stmt = dbGetPrepareStmt($link, $sql, [$userId, $lotId]);
+        return mysqli_stmt_execute($stmt);
+
+    } catch (mysqli_sql_exception $e) {
+        error_log('Ошибка при записи победителя в БД: ' . $e->getMessage());
+        return false;
     }
 }
