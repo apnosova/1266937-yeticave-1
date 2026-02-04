@@ -111,17 +111,17 @@ function getNounPluralForm(int $number, string $one, string $two, string $many):
 }
 
 /**
- * Форматирует цену в рублях с разделителями разрядов
+ * Форматирует цену в рублях с разделителями разрядов, опционально добавляет знак рубля
  * @param int $price Целое число
- * @return string Отформатированная цена со знаком рубля
+ * @param bool $withSymbol Со знаком рубля true, иначе false
+ * @return string Отформатированная цена
  */
-
-function formatPrice(int $price): string
+function formatPrice(int $price, bool $withSymbol = true): string
 {
-    return number_format($price, 0, '.', ' ') . '<b class="rub"></b>';
-}
+    $formatted = number_format($price, 0, '.', ' ');
 
-// number_format($price, 0, '.', ' ');
+    return $withSymbol ? $formatted . '<b class="rub"></b>' : $formatted;
+}
 
 /**
  *  Возвращает количество целых часов и остатка минут до даты в будущем
@@ -129,12 +129,12 @@ function formatPrice(int $price): string
  * @param string $date Дата в формате ГГГГ-ММ-ДД
  * @return array Массив: первый элемент - целое количество часов до даты, второй - остаток в минутах
  */
-function getTimeToExpiry(string $date): array
+function getRemainingTime(string $date): array
 {
     $expiryDate = date_create($date);
 
     if ($expiryDate === false) {
-        error_log('В функцию getTimeToExpiry передана некорректная дата' . $date);
+        error_log('В функцию getRemainingTime передана некорректная дата' . $date);
         return [0, 0];
     }
 
@@ -145,14 +145,15 @@ function getTimeToExpiry(string $date): array
     }
 
     $interval = date_diff($currentDate, $expiryDate);
-
-    $days = $interval->d;
-    $hours = $interval->h;
+    $hours = ($interval->days * 24) + $interval->h;
     $minutes = $interval->i;
 
-    if ($days !== 0) {
-        $hours += $days * 24;
-    }
-
     return [$hours, $minutes];
+}
+
+function formatRemainingTime(array $timeData): string
+{
+    [$hours, $minutes] = $timeData;
+
+    return sprintf("%02d:%02d", $hours, $minutes);
 }

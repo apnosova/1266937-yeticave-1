@@ -1,10 +1,12 @@
 <?php
 
 /**
+ * @var string $nav
  * @var array $lot
- * @var array $categories
- * @var string $navContent
  * @var int $minBid
+ * @var array $user
+ * @var array $errors
+ * @var array $lotBids
  */
 
 ?>
@@ -27,23 +29,20 @@
                 <p class="lot-item__description"><?= htmlspecialchars($lot['description']); ?></p>
             </div>
             <div class="lot-item__right">
-                <?php if (!empty($user)): ?>
+                <?php
+                if (!empty($user)): ?>
                     <div class="lot-item__state">
-                        <?php
-                        $timeToExpiry = getTimeToExpiry($lot['expiry_date']);
-                        $hours = $timeToExpiry[0];
-                        $minutes = $timeToExpiry[1];
-                        ?>
+                        <?php [$hours, $minutes] = getRemainingTime($lot['expiry_date']); ?>
                         <div class="lot-item__timer timer <?= $hours === 0 ? 'timer--finishing' : ''; ?>">
-                            <?= sprintf("%02d:%02d", $hours, $minutes) ?>
+                            <?= formatRemainingTime([$hours, $minutes]) ?>
                         </div>
                         <div class="lot-item__cost-state">
                             <div class="lot-item__rate">
                                 <span class="lot-item__amount">Текущая цена</span>
-                                <span class="lot-item__cost"><?= htmlspecialchars($lot['max_price']); ?></span>
+                                <span class="lot-item__cost"><?= formatPrice($lot['max_price'], false); ?></span>
                             </div>
                             <div class="lot-item__min-cost">
-                                Мин. ставка <span><?= htmlspecialchars($minBid) ?> р</span>
+                                Мин. ставка <span><?= formatPrice($minBid, false) ?> р</span>
                             </div>
                         </div>
                         <form class="lot-item__form" action="lot.php?id=<?= $lot['id'] ?>" method="post" autocomplete="off">
@@ -57,15 +56,16 @@
                             <button type="submit" class="button">Сделать ставку</button>
                         </form>
                     </div>
-                <?php endif; ?>
+                    <?php
+                endif; ?>
                 <div class="history">
                     <h3>История ставок (<span><?= count($lotBids); ?></span>)</h3>
                     <table class="history__list">
                         <?php
-                        foreach ($lotBids as $lotBid): ?>
+                        foreach ($lotBids as $bid): ?>
                             <tr class="history__item">
-                                <td class="history__name"><?= htmlspecialchars($lotBid['userName']); ?></td>
-                                <td class="history__price"><?= htmlspecialchars($lotBid['price']); ?> р</td>
+                                <td class="history__name"><?= htmlspecialchars($bid['username']); ?></td>
+                                <td class="history__price"><?= formatPrice($bid['price'], false) ?> р</td>
                                 <td class="history__time">5 минут назад</td>
                             </tr>
                             <?php

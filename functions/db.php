@@ -117,11 +117,11 @@ function getLots(mysqli $link): array
                     l.title,
                     l.price,
                     l.img_url AS url,
-                    l.expiry_at AS expiry_date,
+                    l.expire_at AS expiry_date,
                     c.title AS category
                 FROM lots l
                 JOIN categories c ON l.category_id = c.id
-                WHERE l.expiry_at > NOW()
+                WHERE l.expire_at > NOW()
                 ORDER BY l.created_at DESC';
 
 
@@ -153,7 +153,7 @@ function getLotById(mysqli $link, int $id): ?array
                     l.description,
                     l.img_url AS url,
                     l.price,
-                    l.expiry_at AS expiry_date,
+                    l.expire_at AS expiry_date,
                     l.step,
                     c.title AS category,
                     COALESCE(MAX(b.price), l.price) AS max_price
@@ -187,7 +187,7 @@ function getLotById(mysqli $link, int $id): ?array
  */
 function addLot(mysqli $link, array $data, int $userId): int
 {
-    $sql = "INSERT INTO lots(created_at, title, description, img_url, price, step, expiry_at, creator_id, category_id)
+    $sql = "INSERT INTO lots(created_at, title, description, img_url, price, step, expire_at, creator_id, category_id)
             VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $data = [
@@ -296,7 +296,7 @@ function authenticateUser(mysqli $link, string $email, string $password): array|
  */
 function getItemsCount(mysqli $link, ?string $search = null, ?int $categoryId = null): int
 {
-    $where = 'WHERE expiry_at > NOW()';
+    $where = 'WHERE expire_at > NOW()';
     $params = [];
 
     if ($search) {
@@ -347,12 +347,12 @@ function findLotsBySearch(mysqli $link, string $search, int $pageItems, int $off
                 l.title,
                 l.price,
                 l.img_url AS url,
-                l.expiry_at AS expiry_date,
+                l.expire_at AS expiry_date,
                 c.title AS category
             FROM lots l
             JOIN categories c ON l.category_id = c.id
             WHERE MATCH(l.title, l.description) AGAINST(?)
-            AND l.expiry_at > NOW()
+            AND l.expire_at > NOW()
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?';
 
@@ -385,12 +385,12 @@ function findLotsByCategory(mysqli $link, int $category_id, int $limit, int $off
                 l.title,
                 l.price,
                 l.img_url AS url,
-                l.expiry_at AS expiry_date,
+                l.expire_at AS expiry_date,
                 c.title AS category
                 FROM lots l
                 JOIN categories c ON l.category_id = c.id
                 WHERE category_id = ?
-                AND expiry_at > NOW()
+                AND expire_at > NOW()
                 ORDER BY l.created_at DESC
                 LIMIT ? OFFSET ?';
 
@@ -443,29 +443,76 @@ function addBid(mysqli $link, int $bid, int $lotId, int $userId): bool
  * @param int $lotId id лота
  * @return array Список ставок или пустой массив
  */
-function getBidsByLot(mysqli $link, int $lotId): array
+function getLotBids(mysqli $link, int $lotId): array
 {
     $sql = 'SELECT
-            b.id AS bidId,
-            b.created_at,
-            b.price,
-            u.username AS userName,
-            u.id AS userId
-        FROM bids b
-        JOIN users u ON u.id = b.user_id
-        WHERE b.lot_id = ?
-        ORDER BY b.created_at DESC';
+                b.id,
+                b.created_at,
+                b.price,
+                u.username,
+                u.id AS userId
+            FROM bids b
+            JOIN users u ON u.id = b.user_id
+            WHERE b.lot_id = ?
+            ORDER BY b.created_at DESC';
 
     try {
         $stmt = dbGetPrepareStmt($link, $sql, [$lotId]);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
-        $bids = mysqli_fetch_all($result, MYSQLI_ASSOC);
+        $lotBids = mysqli_fetch_all($result, MYSQLI_ASSOC);
 
-        return $bids ?: [];
+        return $lotBids ?: [];
 
     } catch (mysqli_sql_exception $e) {
         error_log("Ошибка при получении истории ставок для лота {$lotId}: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Получает список ставок, сделанных пользователем
+ * @param mysqli $link Ресурс соединения
+ * @param int $userId id пользователя
+ * @return array Список ставок или пустой массив
+ */
+function getUserBids(mysqli $link, int $userId): array
+{
+    $sql = 'SELECT
+                b.id,
+                b.created_at,
+                b.price,
+                l.id AS lotId,
+                l.title,
+                l.img_url AS url,
+                l.expire_at AS expiry_date,
+                c.title AS category,
+                u.contacts,
+                CASE
+                    WHEN l.winner_id = b.user_id THEN 1
+                    ELSE 0
+                END AS isWinner,
+                CASE
+                    WHEN l.expire_at <= NOW() THEN 1
+                    ELSE 0
+                END AS isExpired
+            FROM bids b
+            JOIN lots l ON l.id = b.lot_id
+            JOIN categories c ON c.id = l.category_id
+            JOIN users u ON u.id = l.creator_id
+            WHERE b.user_id = ?
+            ORDER BY b.created_at DESC';
+
+    try {
+        $stmt = dbGetPrepareStmt($link, $sql, [$userId]);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $userBids = mysqli_fetch_all($result, MYSQLI_ASSOC);
+
+        return $userBids ?: [];
+
+    } catch (mysqli_sql_exception $e) {
+        error_log("Ошибка при получении списка ставок, сделанных пользователем {$userId}: " . $e->getMessage());
         return [];
     }
 }

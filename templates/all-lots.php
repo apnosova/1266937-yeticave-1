@@ -27,13 +27,9 @@
                             <?= formatPrice(htmlspecialchars($lot['price'])); ?>
                         </span>
                     </div>
-                    <?php
-                    $timeToExpiry = getTimeToExpiry($lot['expiry_date']);
-                    $hours = $timeToExpiry[0];
-                    $minutes = $timeToExpiry[1];
-                    ?>
+                    <?php [$hours, $minutes] = getRemainingTime($lot['expiry_date']); ?>
                     <div class="lot__timer timer <?= $hours === 0 ? 'timer--finishing' : ''; ?>">
-                        <?= sprintf("%02d:%02d", $hours, $minutes) ?>
+                        <?= formatRemainingTime([$hours, $minutes]) ?>
                     </div>
                 </div>
             </div>

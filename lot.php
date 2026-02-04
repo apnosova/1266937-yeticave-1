@@ -22,7 +22,7 @@ if ($lot === null) {
     die("Лот не найден");
 }
 
-$lotBids = getBidsByLot($db, $lotId);
+$lotBids = getLotBids($db, $lotId);
 
 $errors = [];
 $postData = $_POST;
