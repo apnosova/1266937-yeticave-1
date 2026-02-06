@@ -57,7 +57,7 @@
                         <?= formatPrice($bid['price'] ?? 0, false); ?> р
                     </td>
                     <td class="rates__time">
-                        Час назад
+                        <?= getTimePassed($bid['created_at']); ?>
                     </td>
                 </tr>
                 <?php

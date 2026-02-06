@@ -126,10 +126,14 @@ function getLots(mysqli $link): array
                     l.price,
                     l.img_url AS url,
                     l.expire_at AS expiry_date,
-                    c.title AS category
+                    c.title AS category,
+                    COALESCE(MAX(b.price), l.price) AS current_price,
+                    COUNT(b.id) AS bids_count
                 FROM lots l
                 JOIN categories c ON l.category_id = c.id
+                LEFT JOIN bids b ON l.id = b.lot_id
                 WHERE l.expire_at > NOW()
+                GROUP BY l.id
                 ORDER BY l.created_at DESC';
 
 
@@ -368,12 +372,16 @@ function findLotsBySearch(mysqli $link, string $search, int $pageItems, int $off
                 l.price,
                 l.img_url AS url,
                 l.expire_at AS expiry_date,
-                c.title AS category
+                c.title AS category,
+                COALESCE(MAX(b.price), l.price) AS current_price,
+                COUNT(b.id) AS bids_count
             FROM lots l
             JOIN categories c ON l.category_id = c.id
+            LEFT JOIN bids b ON l.id = b.lot_id
             WHERE MATCH(l.title, l.description) AGAINST(?)
                 AND l.expire_at > NOW()
-            ORDER BY created_at DESC
+            GROUP BY l.id
+            ORDER BY l.created_at DESC
             LIMIT ? OFFSET ?';
 
     try {
@@ -407,13 +415,17 @@ function findLotsByCategory(mysqli $link, int $category_id, int $limit, int $off
                 l.price,
                 l.img_url AS url,
                 l.expire_at AS expiry_date,
-                c.title AS category
-                FROM lots l
-                JOIN categories c ON l.category_id = c.id
-                WHERE category_id = ?
-                    AND expire_at > NOW()
-                ORDER BY l.created_at DESC
-                LIMIT ? OFFSET ?';
+                c.title AS category,
+                COALESCE(MAX(b.price), l.price) AS current_price,
+                COUNT(b.id) AS bids_count
+            FROM lots l
+            JOIN categories c ON l.category_id = c.id
+            LEFT JOIN bids b ON l.id = b.lot_id
+            WHERE category_id = ?
+                AND expire_at > NOW()
+            GROUP BY l.id
+            ORDER BY l.created_at DESC
+            LIMIT ? OFFSET ?';
 
     try {
         $stmt = dbGetPrepareStmt($link, $sql, [$category_id, $limit, $offset]);

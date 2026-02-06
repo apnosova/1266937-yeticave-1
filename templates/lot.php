@@ -66,7 +66,7 @@
                             <tr class="history__item">
                                 <td class="history__name"><?= htmlspecialchars($bid['username']); ?></td>
                                 <td class="history__price"><?= formatPrice($bid['price'], false) ?> р</td>
-                                <td class="history__time">5 минут назад</td>
+                                <td class="history__time"><?= getTimePassed($bid['created_at']); ?></td>
                             </tr>
                             <?php
                         endforeach; ?>

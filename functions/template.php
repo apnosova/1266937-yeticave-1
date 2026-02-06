@@ -131,7 +131,7 @@ function formatPrice(int $price, bool $withSymbol = true): string
 }
 
 /**
- *  Возвращает количество целых часов и остатка минут до даты в будущем
+ * Возвращает количество целых часов и остатка минут до даты в будущем
  *
  * @param string $date Дата в формате ГГГГ-ММ-ДД
  *
@@ -142,7 +142,7 @@ function getRemainingTime(string $date): array
     $expiryDate = date_create($date);
 
     if ($expiryDate === false) {
-        error_log('В функцию getRemainingTime передана некорректная дата' . $date);
+        error_log('В функцию getRemainingTime передана некорректная дата: ' . $date);
         return [0, 0];
     }
 
@@ -173,4 +173,41 @@ function formatRemainingTime(array $timeData): string
     return sprintf("%02d:%02d", $hours, $minutes);
 }
 
-// function getTimePassed()
+/**
+ * Показывает время, прошедшее с момента события, в человекочитаемом формате
+ *
+ * @param string $date Дата события
+ *
+ * @return string Отформатированная строка (меньше минуты назад, n минут назад, n часов назад,
+ *                или дата, если прошло больше суток)
+ */
+function getTimePassed(string $date): string
+{
+    $createdDate = date_create($date);
+
+    if ($createdDate === false) {
+        error_log('В функцию getTimePassed передана некорректная дата: ' . $date);
+        return ' ';
+    }
+
+    $currentDate = date_create();
+
+    $interval = date_diff($currentDate, $createdDate);
+
+    $hours = ($interval->days * 24) + $interval->h;
+    $minutes = $interval->i;
+
+    if ($hours === 0 && $minutes === 0) {
+        return 'меньше минуты назад';
+    }
+
+    if ($hours === 0) {
+        return $minutes . ' ' . getNounPluralForm($minutes, 'минуту', 'минуты', 'минут') . ' назад';
+    }
+
+    if ($hours < 24) {
+        return $hours . ' ' . getNounPluralForm($hours, 'час', 'часа', 'часов') . ' назад';
+    }
+
+    return date_format($createdDate, 'd.m.y в H:i');
+}

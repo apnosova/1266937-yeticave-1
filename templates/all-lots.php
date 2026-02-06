@@ -22,10 +22,20 @@
                     </a></h3>
                 <div class="lot__state">
                     <div class="lot__rate">
-                        <span class="lot__amount">Стартовая цена</span>
-                        <span class="lot__cost">
-                            <?= formatPrice(htmlspecialchars($lot['price'])); ?>
-                        </span>
+                        <?php if ($lot['bids_count'] > 0): ?>
+                            <span class="lot__amount">
+                                <?= $lot['bids_count'] ?>
+                                <?= getNounPluralForm((int) $lot['bids_count'], 'ставка', 'ставки', 'ставок') ?>
+                            </span>
+                            <span class="lot__cost">
+                                <?= formatPrice(htmlspecialchars($lot['current_price'])); ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="lot__amount">Стартовая цена</span>
+                            <span class="lot__cost">
+                                <?= formatPrice(htmlspecialchars($lot['price'])); ?>
+                            </span>
+                        <?php endif; ?>
                     </div>
                     <?php [$hours, $minutes] = getRemainingTime($lot['expiry_date']); ?>
                     <div class="lot__timer timer <?= $hours === 0 ? 'timer--finishing' : ''; ?>">
