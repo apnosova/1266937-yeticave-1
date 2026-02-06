@@ -61,14 +61,14 @@ function dbGetPrepareStmt(mysqli $link, string $sql, array $data = []): mysqli_s
  *
  * @return mysqli Ресурс соединения
  */
-function connectDB(array $config_db): mysqli
+function connectDb(array $configDb): mysqli
 {
     try {
         $link = mysqli_connect(
-            $config_db['hostname'],
-            $config_db['username'],
-            $config_db['password'],
-            $config_db['database']
+            $configDb['hostname'],
+            $configDb['username'],
+            $configDb['password'],
+            $configDb['database']
         );
 
         mysqli_set_charset($link, "utf8mb4");
@@ -197,7 +197,7 @@ function getLotById(mysqli $link, int $id): ?array
  *
  * @return int id добавленного лота
  */
-function addLot(mysqli $link, array $data, int $userId): int
+function addLot(mysqli $link, array $data): int
 {
     $sql = 'INSERT INTO lots(
                 created_at,
@@ -211,17 +211,6 @@ function addLot(mysqli $link, array $data, int $userId): int
                 category_id
             )
             VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)';
-
-    $data = [
-        $data['lot-name'],
-        $data['message'],
-        $data['lot-img'],
-        $data['lot-rate'],
-        $data['lot-step'],
-        $data['lot-date'],
-        $userId,
-        $data['category']
-    ];
 
     try {
         $stmt = dbGetPrepareStmt($link, $sql, $data);
@@ -250,8 +239,6 @@ function addLot(mysqli $link, array $data, int $userId): int
  */
 function addNewUser(mysqli $link, array $data): bool
 {
-    $password = password_hash($data['password'], PASSWORD_DEFAULT);
-
     $sql = 'INSERT INTO users (
                 created_at,
                 email,
@@ -261,12 +248,7 @@ function addNewUser(mysqli $link, array $data): bool
             )
             VALUES (NOW(), ?, ?, ?, ?)';
 
-    $stmt = dbGetPrepareStmt($link, $sql, [
-        $data['email'],
-        $data['name'],
-        $password,
-        $data['message']
-    ]);
+    $stmt = dbGetPrepareStmt($link, $sql, $data);
 
     try {
         $result = mysqli_stmt_execute($stmt);

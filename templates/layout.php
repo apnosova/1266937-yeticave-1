@@ -2,10 +2,10 @@
 
 /**
  * @var string $title
- * @var int $isAuth
- * @var string $userName
  * @var string $content
- * @var array $categories
+ * @var string $nav
+ * @var array $user
+ * @var string $search
  */
 
 ?>
@@ -62,7 +62,7 @@
         </div>
 
         <footer class="main-footer">
-            <?= $nav ?? ''; ?>
+            <?= $nav; ?>
             <div class="main-footer__bottom container">
                 <div class="main-footer__copyright">
                     <p>© 2019, YetiCave</p>

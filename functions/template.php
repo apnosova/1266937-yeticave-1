@@ -59,6 +59,7 @@ function showErrorPage(int $code, string $message, ?array $user, array $categori
             'content' => $mainContent,
             'user' => $user,
             'categories' => $categories,
+            'nav' => $navContent
         ]
     );
 

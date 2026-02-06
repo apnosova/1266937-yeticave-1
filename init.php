@@ -19,7 +19,7 @@ $config = require_once __DIR__ . '/config.php';
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-$db = connectDB($config['db']);
+$db = connectDb($config['db']);
 
 date_default_timezone_set('Europe/Moscow');
 mysqli_query($db, "SET time_zone = '+03:00'");

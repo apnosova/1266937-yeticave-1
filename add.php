@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @var array user
+ * @var array $user
  * @var mysqli $db
  */
 
@@ -30,9 +30,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (move_uploaded_file($tmpName, __DIR__ . '/' . $filePath)) {
             $postData['lot-img'] = $filePath;
             $userId = $user['id'];
+            $lotData = [
+                $postData['lot-name'],
+                $postData['message'],
+                $postData['lot-img'],
+                $postData['lot-rate'],
+                $postData['lot-step'],
+                $postData['lot-date'],
+                $userId,
+                $postData['category']
+            ];
 
             try {
-                $id = addLot($db, $postData, $userId);
+                $id = addLot($db, $lotData);
                 header("Location: /lot.php?id={$id}");
                 exit();
 

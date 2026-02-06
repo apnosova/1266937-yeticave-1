@@ -19,7 +19,6 @@ $navContent = includeTemplate(
 $pageContent = includeTemplate(
     'main.php',
     [
-        'nav' => $navContent,
         'categories' => $categories,
         'lots' => $lots,
     ]

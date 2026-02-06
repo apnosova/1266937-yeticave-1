@@ -23,13 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors['email'])) {
         $uniqueError = validateEmailUnique($db, $email);
+
         if ($uniqueError) {
             $errors['email'] = $uniqueError;
         }
     }
 
     if (empty($errors)) {
-        $result = addNewUser($db, $postData);
+        $password_hash = password_hash($postData['password'], PASSWORD_DEFAULT);
+        $userData = [
+            $postData['email'],
+            $postData['name'],
+            $password_hash,
+            $postData['message']
+        ];
+
+        $result = addNewUser($db, $userData);
 
         if ($result) {
             header("Location: /login.php");
