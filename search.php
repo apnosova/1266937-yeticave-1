@@ -3,7 +3,6 @@
 /**
  * @var mysqli $db
  * @var array $user
- * @var array $pagination
  */
 
 require_once __DIR__ . '/init.php';
