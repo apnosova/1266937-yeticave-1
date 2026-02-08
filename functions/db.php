@@ -49,6 +49,7 @@ function dbGetPrepareStmt(mysqli $link, string $sql, array $data = []): mysqli_s
     return $stmt;
 }
 
+
 /**
  * Устанавливает новое соединение с базой данных
  *
@@ -440,10 +441,9 @@ function findLotsByCategory(mysqli $link, int $category_id, int $limit, int $off
  * Добавляет в БД новую ставку
  *
  * @param mysqli $link Ресурс соединения
- * @param int $cost Сумма ставки
+ * @param int $bid Сумма ставки
  * @param int $lotId Id лота
- * @param int userId Id пользователя
- * @param array $data Массив данных (сумма ставки, id лота, id пользователя)
+ * @param int $userId Id пользователя
  *
  * @return bool При успехе true, иначе false
  */
